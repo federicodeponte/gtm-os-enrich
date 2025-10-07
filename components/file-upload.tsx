@@ -24,10 +24,14 @@ export function FileUpload({ onUpload }: FileUploadProps) {
           const headers = results.meta.fields || [];
           const rows = results.data as Record<string, string>[];
 
+          // Mock Supabase URL
+          const mockSupabaseUrl = `https://mock-storage.supabase.co/storage/v1/object/public/uploads/${Date.now()}_${file.name}`;
+
           onUpload({
             headers,
             rows,
             fileName: file.name,
+            supabaseUrl: mockSupabaseUrl,
           });
         },
         error: (error) => {

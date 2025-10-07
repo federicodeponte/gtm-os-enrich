@@ -3,6 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
+import { ExternalLink } from "lucide-react";
 import type { CSVData } from "./enrichment-workflow";
 
 interface DataPreviewProps {
@@ -23,6 +24,20 @@ export function DataPreview({ data, onNext, onBack }: DataPreviewProps) {
             <CardDescription>
               {data.fileName} • {data.rows.length.toLocaleString()} rows •{" "}
               {data.headers.length} columns
+              {data.supabaseUrl && (
+                <>
+                  {" • "}
+                  <a
+                    href={data.supabaseUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-blue-600 hover:underline"
+                  >
+                    View in storage
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </>
+              )}
             </CardDescription>
           </div>
           <Badge variant="secondary">{data.rows.length} rows</Badge>

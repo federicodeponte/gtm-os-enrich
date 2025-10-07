@@ -54,12 +54,15 @@ export function ChatInterface() {
   const handleFileUpload = (data: CSVData) => {
     setCSVData(data);
     
-    // User message
+    // Mock Supabase URL
+    const mockSupabaseUrl = `https://mock-storage.supabase.co/storage/v1/object/public/uploads/${Date.now()}_${data.fileName}`;
+    
+    // User message with Supabase URL
     addMessage({
       role: "user",
       content: `Uploaded ${data.fileName}`,
       type: "file-upload",
-      data,
+      data: { ...data, supabaseUrl: mockSupabaseUrl },
     });
 
     // AI response
@@ -109,22 +112,44 @@ export function ChatInterface() {
     }, 1000);
   };
 
-  const handleRunSample = () => {
+  const handleRunSample = (sampleSize: number) => {
     addMessage({
       role: "assistant",
-      content: "Running sample enrichment on 5 rows...",
+      content: `Running sample enrichment on ${sampleSize} rows...`,
       type: "sample",
-      data: { csvData },
+      data: { csvData, sampleSize },
     });
   };
 
   const handleRunFull = () => {
     addMessage({
       role: "assistant",
-      content: "Starting full enrichment...",
+      content: "Starting full enrichment with 100 async workers...",
       type: "progress",
-      data: { csvData },
+      data: { csvData, workerCount: 100 },
     });
+  };
+
+  const handleRefine = (feedback: string) => {
+    // User feedback message
+    addMessage({
+      role: "user",
+      content: feedback,
+      type: "text",
+    });
+
+    // AI regenerates plan
+    setTimeout(() => {
+      addMessage({
+        role: "assistant",
+        content: "Thanks for the feedback! Let me refine the plan...",
+        type: "plan",
+        data: {
+          csvData,
+          userRequest: feedback,
+        },
+      });
+    }, 800);
   };
 
   return (
@@ -138,6 +163,7 @@ export function ChatInterface() {
                 key={message.id}
                 data={message.data}
                 timestamp={message.timestamp}
+                supabaseUrl={message.data?.supabaseUrl}
               />
             );
           }
@@ -149,6 +175,7 @@ export function ChatInterface() {
                 data={message.data}
                 onRunSample={handleRunSample}
                 onRunFull={handleRunFull}
+                onRefine={handleRefine}
               />
             );
           }

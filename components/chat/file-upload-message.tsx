@@ -1,15 +1,16 @@
 "use client";
 
-import { FileText, User } from "lucide-react";
+import { FileText, User, ExternalLink } from "lucide-react";
 import { Badge } from "../ui/badge";
 import type { CSVData } from "../enrichment-workflow";
 
 interface FileUploadMessageProps {
   data: CSVData;
   timestamp: Date;
+  supabaseUrl?: string;
 }
 
-export function FileUploadMessage({ data, timestamp }: FileUploadMessageProps) {
+export function FileUploadMessage({ data, timestamp, supabaseUrl }: FileUploadMessageProps) {
   return (
     <div className="flex gap-3 justify-end">
       <div
@@ -39,6 +40,19 @@ export function FileUploadMessage({ data, timestamp }: FileUploadMessageProps) {
                 {data.headers.length} columns
               </Badge>
             </div>
+            
+            {supabaseUrl && (
+              <a
+                href={supabaseUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 mt-2 text-xs hover:underline"
+                style={{ color: "#0528F2" }}
+              >
+                <ExternalLink className="w-3 h-3" />
+                View in storage
+              </a>
+            )}
           </div>
         </div>
 

@@ -10,17 +10,22 @@ interface EnrichmentPlanMessageProps {
     csvData: CSVData;
     userRequest: string;
   };
-  onRunSample: () => void;
+  onRunSample: (sampleSize: number) => void;
   onRunFull: () => void;
+  onRefine?: (feedback: string) => void;
 }
 
 export function EnrichmentPlanMessage({
   data,
   onRunSample,
   onRunFull,
+  onRefine,
 }: EnrichmentPlanMessageProps) {
   const [isGenerating, setIsGenerating] = useState(true);
   const [plan, setPlan] = useState<EnrichmentPlanData | null>(null);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const [sampleSize, setSampleSize] = useState(5);
 
   useEffect(() => {
     const generatePlan = async () => {
@@ -170,25 +175,97 @@ export function EnrichmentPlanMessage({
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <Button
-            onClick={onRunSample}
-            variant="outline"
-            size="sm"
-            className="flex-1"
-            style={{ borderColor: "#C4CBF2" }}
-          >
-            Test on 5 rows
-          </Button>
-          <Button
-            onClick={onRunFull}
-            size="sm"
-            className="flex-1"
-            style={{ backgroundColor: "#0528F2" }}
-          >
-            Run full enrichment
-          </Button>
-        </div>
+        {!showFeedback ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <label className="text-sm" style={{ color: "#626262" }}>
+                Sample size:
+              </label>
+              <select
+                value={sampleSize}
+                onChange={(e) => setSampleSize(Number(e.target.value))}
+                className="px-2 py-1 text-sm rounded border"
+                style={{ borderColor: "#C4CBF2" }}
+              >
+                <option value={3}>3 rows</option>
+                <option value={5}>5 rows</option>
+                <option value={10}>10 rows</option>
+                <option value={25}>25 rows</option>
+              </select>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                onClick={() => onRunSample(sampleSize)}
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                style={{ borderColor: "#C4CBF2" }}
+              >
+                Test sample
+              </Button>
+              <Button
+                onClick={onRunFull}
+                size="sm"
+                className="flex-1"
+                style={{ backgroundColor: "#0528F2" }}
+              >
+                Run full enrichment
+              </Button>
+            </div>
+
+            {onRefine && (
+              <Button
+                onClick={() => setShowFeedback(true)}
+                variant="ghost"
+                size="sm"
+                className="w-full text-xs"
+                style={{ color: "#626262" }}
+              >
+                Refine plan
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <textarea
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              placeholder="How would you like to refine this plan? (e.g., 'Also add company website', 'Use a different prompt', etc.)"
+              className="w-full px-3 py-2 text-sm rounded border resize-none"
+              style={{ borderColor: "#C4CBF2", minHeight: "80px" }}
+            />
+            <div className="flex gap-2">
+              <Button
+                onClick={() => {
+                  setShowFeedback(false);
+                  setFeedback("");
+                }}
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                style={{ borderColor: "#C4CBF2" }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (onRefine && feedback.trim()) {
+                    onRefine(feedback);
+                    setShowFeedback(false);
+                    setFeedback("");
+                  }
+                }}
+                size="sm"
+                className="flex-1"
+                style={{ backgroundColor: "#0528F2" }}
+                disabled={!feedback.trim()}
+              >
+                Submit feedback
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

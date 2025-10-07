@@ -9,6 +9,7 @@ import type { CSVData, SampleResultData } from "../enrichment-workflow";
 interface SampleResultsMessageProps {
   data: {
     csvData: CSVData;
+    sampleSize?: number;
   };
   onRunFull: () => void;
 }
@@ -19,12 +20,13 @@ export function SampleResultsMessage({
 }: SampleResultsMessageProps) {
   const [isRunning, setIsRunning] = useState(true);
   const [results, setResults] = useState<SampleResultData | null>(null);
+  const sampleSize = data.sampleSize || 5;
 
   useEffect(() => {
     const runSample = async () => {
       await new Promise((resolve) => setTimeout(resolve, 1200));
 
-      const sampleRows = data.csvData.rows.slice(0, 5);
+      const sampleRows = data.csvData.rows.slice(0, sampleSize);
       const enrichedRows = sampleRows.map((row) => ({
         ...row,
         zip: ["1010", "1210", "1200", "1170", "1120"][
@@ -41,7 +43,7 @@ export function SampleResultsMessage({
     };
 
     runSample();
-  }, [data.csvData.rows]);
+  }, [data.csvData.rows, sampleSize]);
 
   if (isRunning) {
     return (
@@ -66,7 +68,7 @@ export function SampleResultsMessage({
               style={{ color: "#0528F2" }}
             />
             <p className="text-md" style={{ color: "#626262" }}>
-              Testing on 5 rows...
+              Testing on {sampleSize} rows...
             </p>
           </div>
         </div>

@@ -5,14 +5,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Alert, AlertDescription } from "./ui/alert";
-import { Loader2, CheckCircle2, DollarSign, Clock, Zap } from "lucide-react";
+import { Textarea } from "./ui/textarea";
+import { Loader2, CheckCircle2, DollarSign, Clock, Zap, ExternalLink } from "lucide-react";
 import type { CSVData, EnrichmentPlanData } from "./enrichment-workflow";
 
 interface EnrichmentPlanProps {
   csvData: CSVData;
   userRequest: string;
   onPlanGenerated: (plan: EnrichmentPlanData) => void;
-  onRunSample: () => void;
+  onRunSample: (sampleSize: number) => void;
   onBack: () => void;
 }
 
@@ -25,6 +26,9 @@ export function EnrichmentPlan({
 }: EnrichmentPlanProps) {
   const [isGenerating, setIsGenerating] = useState(true);
   const [plan, setPlan] = useState<EnrichmentPlanData | null>(null);
+  const [sampleSize, setSampleSize] = useState(5);
+  const [showRefine, setShowRefine] = useState(false);
+  const [refineFeedback, setRefineFeedback] = useState("");
 
   useEffect(() => {
     // Mock AI plan generation
@@ -162,19 +166,78 @@ async def enrich_row(row):
 
           <Alert>
             <AlertDescription>
-              <strong>Next step:</strong> Run a sample enrichment on 5 rows to
+              <strong>Next step:</strong> Run a sample enrichment to
               verify the results before processing the full dataset.
             </AlertDescription>
           </Alert>
 
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={onBack}>
-              Back
-            </Button>
-            <Button onClick={onRunSample} className="flex-1">
-              Run Sample (5 rows)
-            </Button>
-          </div>
+          {!showRefine ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <label className="text-sm font-medium text-slate-700">
+                  Sample size:
+                </label>
+                <select
+                  value={sampleSize}
+                  onChange={(e) => setSampleSize(Number(e.target.value))}
+                  className="px-3 py-2 text-sm rounded-md border border-slate-300"
+                >
+                  <option value={3}>3 rows</option>
+                  <option value={5}>5 rows</option>
+                  <option value={10}>10 rows</option>
+                  <option value={25}>25 rows</option>
+                </select>
+              </div>
+
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={onBack}>
+                  Back
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowRefine(true)}
+                  className="flex-1"
+                >
+                  Refine Plan
+                </Button>
+                <Button onClick={() => onRunSample(sampleSize)} className="flex-1">
+                  Run Sample ({sampleSize} rows)
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <Textarea
+                value={refineFeedback}
+                onChange={(e) => setRefineFeedback(e.target.value)}
+                placeholder="How would you like to refine this plan? (e.g., 'Also add company website', 'Use a different prompt', etc.)"
+                className="min-h-[100px]"
+              />
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowRefine(false);
+                    setRefineFeedback("");
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    // In real implementation, this would regenerate the plan
+                    alert("Plan refinement would be sent to AI here. For now, this is a mock.");
+                    setShowRefine(false);
+                    setRefineFeedback("");
+                  }}
+                  className="flex-1"
+                  disabled={!refineFeedback.trim()}
+                >
+                  Submit Feedback
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

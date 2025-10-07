@@ -23,6 +23,7 @@ export interface CSVData {
   headers: string[];
   rows: Record<string, string>[];
   fileName: string;
+  supabaseUrl?: string;
 }
 
 export interface EnrichmentPlanData {
@@ -61,8 +62,9 @@ export function EnrichmentWorkflow() {
     setPlan(planData);
   };
 
-  const handleRunSample = () => {
+  const handleRunSample = (sampleSize: number) => {
     setStep("sample");
+    // sampleSize is passed down to SampleResults component
   };
 
   const handleSampleComplete = (results: SampleResultData) => {

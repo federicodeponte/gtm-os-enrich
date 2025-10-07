@@ -1,14 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bot, Download, CheckCircle2 } from "lucide-react";
+import { Bot, Download, CheckCircle2, Activity } from "lucide-react";
 import { Progress } from "../ui/progress";
 import { Button } from "../ui/button";
 import type { CSVData } from "../enrichment-workflow";
 
+interface WorkerStatus {
+  id: number;
+  status: "idle" | "processing" | "completed";
+  rowsProcessed: number;
+}
+
 interface ProgressMessageProps {
   data: {
     csvData: CSVData;
+    workerCount?: number;
   };
 }
 
@@ -18,10 +25,20 @@ export function ProgressMessage({ data }: ProgressMessageProps) {
   const [rate, setRate] = useState(0);
   const [eta, setEta] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
+  const [workers, setWorkers] = useState<WorkerStatus[]>([]);
 
   useEffect(() => {
     const total = data.csvData.rows.length;
     const startTime = Date.now();
+    const workerCount = data.workerCount || 100;
+
+    // Initialize workers
+    const initialWorkers: WorkerStatus[] = Array.from({ length: workerCount }, (_, i) => ({
+      id: i + 1,
+      status: "idle",
+      rowsProcessed: 0,
+    }));
+    setWorkers(initialWorkers);
 
     const interval = setInterval(() => {
       setProcessed((prev) => {
@@ -37,6 +54,20 @@ export function ProgressMessage({ data }: ProgressMessageProps) {
         const etaSeconds = remaining / currentRate;
         setEta(etaSeconds);
 
+        // Update worker statuses
+        setWorkers((prevWorkers) =>
+          prevWorkers.map((worker) => {
+            const avgRowsPerWorker = Math.floor(next / workerCount);
+            const isActive = worker.id <= Math.ceil((next / total) * workerCount);
+            
+            return {
+              ...worker,
+              status: next >= total ? "completed" : isActive ? "processing" : "idle",
+              rowsProcessed: isActive ? Math.min(avgRowsPerWorker + Math.floor(Math.random() * 10), Math.floor(total / workerCount)) : 0,
+            };
+          })
+        );
+
         if (next >= total) {
           clearInterval(interval);
           setIsComplete(true);
@@ -47,7 +78,7 @@ export function ProgressMessage({ data }: ProgressMessageProps) {
     }, 300);
 
     return () => clearInterval(interval);
-  }, [data.csvData.rows.length]);
+  }, [data.csvData.rows.length, data.workerCount]);
 
   const handleDownload = () => {
     const headers = [...data.csvData.headers, "zip", "confidence"];
@@ -129,7 +160,7 @@ export function ProgressMessage({ data }: ProgressMessageProps) {
         ) : (
           <>
             <p className="text-md mb-3" style={{ color: "#0D0D0D" }}>
-              Enriching {data.csvData.rows.length.toLocaleString()} rows...
+              Enriching {data.csvData.rows.length.toLocaleString()} rows with {workers.length} async workers...
             </p>
 
             <div className="space-y-2 mb-3">
@@ -142,11 +173,49 @@ export function ProgressMessage({ data }: ProgressMessageProps) {
               <Progress value={progress} className="h-2" />
             </div>
 
-            <div className="flex justify-between text-xs" style={{ color: "#626262" }}>
+            <div className="flex justify-between text-xs mb-3" style={{ color: "#626262" }}>
+              <div className="flex items-center gap-2">
+                <Activity className="w-3 h-3" style={{ color: "#0528F2" }} />
+                <span>{workers.filter(w => w.status === "processing").length} active workers</span>
+              </div>
               <span>{rate.toFixed(1)} rows/sec</span>
               <span>
                 {eta > 60 ? `${(eta / 60).toFixed(1)} min` : `${eta.toFixed(0)} sec`} remaining
               </span>
+            </div>
+
+            {/* Worker grid visualization */}
+            <div className="grid grid-cols-10 gap-1 mb-2">
+              {workers.slice(0, 100).map((worker) => (
+                <div
+                  key={worker.id}
+                  className="aspect-square rounded flex items-center justify-center"
+                  style={{
+                    backgroundColor:
+                      worker.status === "processing"
+                        ? "#0528F2"
+                        : worker.status === "completed"
+                        ? "#10B981"
+                        : "#E5E7EB",
+                  }}
+                  title={`Worker ${worker.id}: ${worker.status} (${worker.rowsProcessed} rows)`}
+                />
+              ))}
+            </div>
+
+            <div className="text-xs flex items-center gap-3" style={{ color: "#626262" }}>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded" style={{ backgroundColor: "#0528F2" }} />
+                <span>Active</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded" style={{ backgroundColor: "#10B981" }} />
+                <span>Done</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded" style={{ backgroundColor: "#E5E7EB" }} />
+                <span>Idle</span>
+              </div>
             </div>
           </>
         )}
